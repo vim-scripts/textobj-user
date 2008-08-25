@@ -1,7 +1,26 @@
 " textobj-user - Support for user-defined text objects
-" Version: 0.3.4
+" Version: 0.3.5
 " Copyright (C) 2007-2008 kana <http://whileimautomaton.net/>
-" License: MIT license (see <http://www.opensource.org/licenses/mit-license>)
+" License: MIT license  {{{
+"     Permission is hereby granted, free of charge, to any person obtaining
+"     a copy of this software and associated documentation files (the
+"     "Software"), to deal in the Software without restriction, including
+"     without limitation the rights to use, copy, modify, merge, publish,
+"     distribute, sublicense, and/or sell copies of the Software, and to
+"     permit persons to whom the Software is furnished to do so, subject to
+"     the following conditions:
+"
+"     The above copyright notice and this permission notice shall be included
+"     in all copies or substantial portions of the Software.
+"
+"     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+"     OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+"     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+"     IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+"     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+"     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+"     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+" }}}
 " Interfaces  "{{{1
 " simple  "{{{2
 
@@ -339,10 +358,10 @@ endfunction
 function! s:plugin.define_interface_key_mappings()  "{{{3
   let RHS_PATTERN = ':<C-u>call g:__textobj_' . self.name . '.%s'
   \                 . '("%s", "%s", "<mode>")<Return>'
-  let RHS_FUNCTION = ':<C-u>call function('
-  \                  .   'g:__textobj_' . self.name . '.obj_specs["%s"]["%s"]'
-  \                  . ')'
-  \                  . '("<mode>")<Return>'
+  let RHS_FUNCTION = ':<C-u>call <SID>select_function_wrapper('
+  \                  .   'g:__textobj_' . self.name . '.obj_specs["%s"]["%s"],'
+  \                  .   '"<mode>"'
+  \                  . ')<Return>'
 
   for [obj_name, specs] in items(self.obj_specs)
     for spec_name in filter(keys(specs), 'v:val[0] != "*" && v:val[-1] != "*"')
@@ -442,6 +461,24 @@ endfunction
 
 function! s:objmap(forced_p, lhs, rhs)
   call s:_map(['vmap', 'omap'], a:forced_p, a:lhs, a:rhs)
+endfunction
+
+
+" *select-function* wrapper  "{{{3
+function! s:select_function_wrapper(function_name, previous_mode)
+  let ORIG_POS = s:gpos_to_spos(getpos('.'))
+  call s:prepare_selection(a:previous_mode)
+
+  let _ = function(a:function_name)()
+  if _ is 0
+    call s:cancel_selection(a:previous_mode, ORIG_POS)
+  else
+    let [motion_type, start_position, end_position] = _
+    call setpos('.', start_position)
+    execute 'normal!' motion_type
+    call setpos('.', end_position)
+    echomsg string(_)
+  endif
 endfunction
 
 
