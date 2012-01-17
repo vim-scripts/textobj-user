@@ -56,7 +56,10 @@
 
 # Common  #{{{1
 
-all: # Ensure that this is the default target.
+# Use "all" as the default target if no targets were specified on the command
+# line or any other rules were defined before including this Makefile.
+.DEFAULT_GOAL := all
+all:
 
 SHELL := /bin/bash
 this_makefile := $(lastword $(MAKEFILE_LIST))
@@ -185,7 +188,7 @@ DEP_vim_vspec_URI ?= ../vim-vspec
 DEP_vim_vspec_VERSION ?= 0.0.3
 
 DEP_vimup_URI ?= ../vimup
-DEP_vimup_VERSION ?= 0.0.0a3
+DEP_vimup_VERSION ?= 0.0.1
 
 
 	# BUGS: This resolves "../" just once, but it's enough for usual cases.
@@ -253,10 +256,9 @@ install: $(2)
 $(2): $(1)
 	@echo 'INSTALL $(1)'
 	@mkdir -p '$(dir $(2))'
-ifneq '$(call SHOULD_INSTALL_ASIS_P,$(1))' ''
-	@cp '$(1)' '$(2)'
-else
-	@sed -e 's/0.3.10/$(version)/' '$(1)' >'$(2)'
+	@cp '--preserve=mode,ownership' '$(1)' '$(2)'
+ifeq '$(call SHOULD_INSTALL_ASIS_P,$(1))' ''
+	@sed -i -e 's/0.3.11/$(version)/' '$(2)'
 endif
 
 endef
